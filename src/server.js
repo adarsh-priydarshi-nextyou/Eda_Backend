@@ -56,7 +56,13 @@ app.get('/health', (req, res) => {
 });
 
 /* MongoDB Connection Configuration */
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://tech_user:Nextyou%4024@cluster0.ush6z3w.mongodb.net/?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI;
+
+/* Validate required environment variables */
+if (!MONGODB_URI) {
+  logger.error('MONGODB_URI environment variable is not set');
+  process.exit(1);
+}
 
 /* Connect to MongoDB and start server */
 mongoose
