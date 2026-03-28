@@ -56,7 +56,7 @@ app.get('/health', (req, res) => {
 });
 
 /* MongoDB Connection Configuration */
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://tech_user:Nextyou%4024@cluster0.ush6z3w.mongodb.net/';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://tech_user:Nextyou%4024@cluster0.ush6z3w.mongodb.net/?retryWrites=true&w=majority';
 
 /* Connect to MongoDB and start server */
 mongoose

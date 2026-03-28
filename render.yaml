@@ -10,6 +10,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
-        sync: false
+        value: mongodb+srv://tech_user:Nextyou%4024@cluster0.ush6z3w.mongodb.net/?retryWrites=true&w=majority
       - key: PORT
         value: 5001
