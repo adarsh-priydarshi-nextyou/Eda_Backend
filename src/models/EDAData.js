@@ -29,7 +29,7 @@ import mongoose from 'mongoose';
  * @property {number} step_count - Step count from accelerometer
  * @property {number} eda - Electrodermal Activity (skin conductance in μS)
  * @property {number} eda_status - EDA sensor status (0=NORMAL, -5=DETACHED, -10=LOW_SIGNAL)
- * @property {number} eda_timestamp - EDA reading timestamp in milliseconds
+ * @property {string} eda_timestamp_ist - EDA reading timestamp in IST format
  * @property {string} sensor_datetime_ist - IST timestamp when sensor detected data
  * @property {Date} createdAt - Auto-generated creation timestamp
  * @property {Date} updatedAt - Auto-generated update timestamp
@@ -74,9 +74,9 @@ const edaDataSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    eda_timestamp: {
-      type: Number,
-      default: 0,
+    eda_timestamp_ist: {
+      type: String,
+      default: '',
     },
     sensor_datetime_ist: {
       type: String,
