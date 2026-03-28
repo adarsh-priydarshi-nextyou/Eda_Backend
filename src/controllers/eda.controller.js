@@ -1,19 +1,63 @@
 /**
  * EDA Data Controller
- * Handles batch upload of EDA data from Samsung Watch
+ * 
+ * Handles HTTP requests for EDA (Electrodermal Activity) data management.
+ * Provides endpoints for batch upload and retrieval of health data from Samsung Watch.
+ * 
+ * Features:
+ * - Batch upload with duplicate detection and prevention
+ * - Pagination support for data retrieval
+ * - Automatic data validation and type conversion
+ * - Comprehensive error handling and logging
+ * 
+ * @module controllers/eda.controller
+ * @requires ../utils/logger
+ * @requires ../models/EDAData
  */
 
 import { logger } from '../utils/logger.js';
 import EDAData from '../models/EDAData.js';
 
 /**
- * Batch upload EDA data
- * Endpoint: POST /api/v1/health-data/eda-batch
+ * Batch upload EDA data from Samsung Watch
+ * 
+ * Accepts array of health data records and stores them in MongoDB.
+ * Implements duplicate detection at two levels:
+ * 1. Within the request payload (removes duplicate timestamps)
+ * 2. Against existing database records (skips already stored data)
+ * 
+ * @async
+ * @function batchUploadEDAData
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body
+ * @param {Array<Object>} req.body.data - Array of EDA data records
+ * @param {Object} res - Express response object
+ * @returns {Promise<Object>} JSON response with upload status
+ * 
+ * @example
+ * POST /api/v1/health-data/eda-batch
+ * {
+ *   "data": [
+ *     {
+ *       "user_id": "1234567890123456",
+ *       "timestamp": "2026-03-28T11:32:58.795Z",
+ *       "rr_interval_ms": 602,
+ *       "accel_x": -1506,
+ *       "accel_y": -3586,
+ *       "accel_z": 1387,
+ *       "step_count": 836,
+ *       "eda": 2.5,
+ *       "sensor_datetime_ist": "28/03/2026, 17:02:58",
+ *       "watch_data_send_datetime_ist": "28/03/2026, 17:06:19"
+ *     }
+ *   ]
+ * }
  */
 export const batchUploadEDAData = async (req, res) => {
   const { data } = req.body;
 
   try {
+    /* Validate request payload */
     if (!data || !Array.isArray(data) || data.length === 0) {
       return res.status(400).json({
         success: false,
@@ -28,7 +72,7 @@ export const batchUploadEDAData = async (req, res) => {
       records: data.length,
     });
 
-    // Remove duplicates based on timestamp
+    /* Remove duplicates within request payload based on timestamp */
     const seenTimestamps = new Set();
     const uniqueEntries = [];
     let duplicatesRemoved = 0;
@@ -38,6 +82,7 @@ export const batchUploadEDAData = async (req, res) => {
       
       if (!seenTimestamps.has(key)) {
         seenTimestamps.add(key);
+        /* Convert and validate data types */
         uniqueEntries.push({
           user_id: String(entry.user_id),
           timestamp: String(entry.timestamp),
@@ -63,7 +108,7 @@ export const batchUploadEDAData = async (req, res) => {
       });
     }
 
-    // Check for existing records in DB
+    /* Check for existing records in database */
     const existingRecords = await EDAData.find({
       user_id: watchUserId,
       timestamp: { $in: uniqueEntries.map(e => e.timestamp) }
@@ -81,6 +126,7 @@ export const batchUploadEDAData = async (req, res) => {
       });
     }
 
+    /* Return early if all records already exist */
     if (newEntries.length === 0) {
       return res.status(201).json({
         success: true,
@@ -93,9 +139,9 @@ export const batchUploadEDAData = async (req, res) => {
       });
     }
 
-    // Insert new records
+    /* Insert new records into MongoDB */
     const result = await EDAData.insertMany(newEntries, {
-      ordered: false,
+      ordered: false, /* Continue on duplicate key errors */
     });
 
     const insertedCount = Array.isArray(result) ? result.length : (result.insertedCount || 0);
@@ -116,6 +162,7 @@ export const batchUploadEDAData = async (req, res) => {
     });
 
   } catch (error) {
+    /* Handle MongoDB duplicate key errors */
     if (error.code === 11000) {
       const insertedCount = error.result?.nInserted || error.insertedDocs?.length || 0;
       const watchUserId = data[0]?.user_id;
@@ -148,27 +195,47 @@ export const batchUploadEDAData = async (req, res) => {
 
 /**
  * Get EDA data with pagination
- * Endpoint: GET /api/v1/health-data/eda
+ * 
+ * Retrieves EDA data from MongoDB with optional filtering by user_id.
+ * Supports pagination with configurable page size (max 500 records per page).
+ * Results are sorted by creation date in descending order (newest first).
+ * 
+ * @async
+ * @function getEDAData
+ * @param {Object} req - Express request object
+ * @param {Object} req.query - Query parameters
+ * @param {string} [req.query.user_id] - Filter by user ID
+ * @param {number} [req.query.limit=50] - Records per page (max 500)
+ * @param {number} [req.query.page=1] - Page number
+ * @param {Object} res - Express response object
+ * @returns {Promise<Object>} JSON response with paginated data
+ * 
+ * @example
+ * GET /api/v1/health-data/eda?user_id=1234567890123456&limit=100&page=1
  */
 export const getEDAData = async (req, res) => {
   try {
     const { user_id, limit = 50, page = 1 } = req.query;
 
-    const limitValue = Math.min(parseInt(limit, 10) || 50, 500);
+    /* Validate and sanitize pagination parameters */
+    const limitValue = Math.min(parseInt(limit, 10) || 50, 500); /* Max 500 records per page */
     const pageValue = parseInt(page, 10) || 1;
     const skip = (pageValue - 1) * limitValue;
 
+    /* Build query filter */
     const query = {};
     if (user_id) {
       query.user_id = user_id;
     }
 
+    /* Fetch data with pagination */
     const data = await EDAData.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1 }) /* Newest first */
       .skip(skip)
       .limit(limitValue)
-      .lean();
+      .lean(); /* Return plain JavaScript objects */
 
+    /* Get total count for pagination metadata */
     const total = await EDAData.countDocuments(query);
 
     logger.info('EDA data retrieved', {
