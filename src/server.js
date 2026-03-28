@@ -49,10 +49,14 @@ app.use('/api/v1/health-data', edaRoutes);
  * Returns server status for monitoring and load balancers
  * 
  * @route GET /health
- * @returns {Object} 200 - Server status
+ * @returns {Object} 200 - Server status with version
  */
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'EDA Backend is running' });
+  res.json({ 
+    status: 'ok', 
+    message: 'EDA Backend is running',
+    version: '1.1.0'
+  });
 });
 
 /* MongoDB Connection Configuration */
