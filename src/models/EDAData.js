@@ -8,7 +8,7 @@
  * - Stores sensor data including RR interval, accelerometer, steps, and EDA
  * - Duplicate prevention using compound index on user_id and timestamp
  * - Automatic timestamps (createdAt, updatedAt)
- * - IST timezone support for sensor and transmission timestamps
+ * - IST timezone support for sensor timestamp
  * 
  * @module models/EDAData
  * @requires mongoose
@@ -29,7 +29,6 @@ import mongoose from 'mongoose';
  * @property {number} step_count - Step count from accelerometer
  * @property {number} eda - Electrodermal Activity (skin conductance in μS)
  * @property {string} sensor_datetime_ist - IST timestamp when sensor detected data
- * @property {string} watch_data_send_datetime_ist - IST timestamp when watch sent data to DB
  * @property {Date} createdAt - Auto-generated creation timestamp
  * @property {Date} updatedAt - Auto-generated update timestamp
  */
@@ -70,10 +69,6 @@ const edaDataSchema = new mongoose.Schema(
       required: true,
     },
     sensor_datetime_ist: {
-      type: String,
-      default: '',
-    },
-    watch_data_send_datetime_ist: {
       type: String,
       default: '',
     },

@@ -93,7 +93,6 @@ export const batchUploadEDAData = async (req, res) => {
           step_count: Number(entry.step_count) || 0,
           eda: Number(entry.eda) || 0,
           sensor_datetime_ist: String(entry.sensor_datetime_ist) || '',
-          watch_data_send_datetime_ist: String(entry.watch_data_send_datetime_ist) || '',
         });
       } else {
         duplicatesRemoved++;
